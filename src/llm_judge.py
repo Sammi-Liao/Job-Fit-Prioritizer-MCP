@@ -59,8 +59,9 @@ class JudgeResult(BaseModel):
         return self
 
 JUDGE_PROMPT = """\
-You are an expert technical recruiter specializing in data science hiring. \
-Evaluate how well this candidate fits this specific role across 4 dimensions.
+You are an expert recruiter evaluating candidate-role fit across technical and professional roles.
+Evaluate how well this candidate fits this specific role using only the resume and job
+description provided below. Do not assume anything that is not supported by the text.
 
 RESUME:
 {resume}
@@ -69,24 +70,43 @@ JOB TITLE: {title}
 JOB DESCRIPTION:
 {description}
 
-Score each dimension from 0-25, then sum for a total out of 100:
+Score each dimension from 0-25, then sum for a total out of 100. Be selective:
+a generally good candidate should not automatically receive a high score unless the
+role requirements clearly match the resume.
 
 1. ROLE TYPE MATCH (0-25)
-   Does the nature of the work match? A business-focused DS (causal inference, A/B testing,
-   stakeholder reporting) is NOT a good fit for an ML engineering role (model serving,
-   MLOps, deep learning research), and vice versa. Be strict here.
+   Does the actual work match the candidate's background and target role?
+   Distinguish between different job families and work styles, such as software
+   engineering, data/analytics, product, design, research, operations, customer-facing
+   roles, leadership, and individual contributor work. Penalize role-type mismatches
+   even when some skills overlap.
 
 2. TECHNICAL SKILLS MATCH (0-25)
-   Do the specific tools, methods, and tech stack overlap?
-   Partial overlap = partial credit. No overlap = 0.
+   Compare required skills separately from preferred or nice-to-have skills.
+   Required skills, tools, platforms, methods, certifications, workflows, and
+   deliverables should drive most of this score. Preferred skills can strengthen
+   an already good match, but they should not compensate for missing must-have
+   requirements. Give partial credit for adjacent skills only when they plausibly
+   transfer to the role.
 
-3. EXPERIENCE LEVEL MATCH (0-25)
-   Does the candidate's seniority and years of experience fit what the role requires?
-   Overqualified or underqualified both lose points.
+3. SENIORITY / SCOPE MATCH (0-25)
+   Does the candidate's seniority and expected scope match the role?
+   Consider years of experience, ownership level, leadership expectations,
+   independence, cross-functional work, people management, and whether the role
+   appears junior, mid-level, senior, staff, manager, or executive-level.
 
 4. DOMAIN / INDUSTRY FIT (0-25)
-   Does the candidate's background domain (e.g. e-commerce, finance, healthcare)
-   align with the company's domain? Adjacent = partial credit.
+   Compare the candidate's domain background with domain signals in the job
+   description, such as industry, customer segment, business model, regulated
+   environment, product area, or user type. If the job description gives little
+   domain signal, assign a moderate score instead of inventing a domain.
+
+Scoring guidance:
+- 21-25: strong direct match with clear evidence
+- 16-20: good match with minor gaps
+- 10-15: partial or adjacent match
+- 5-9: weak match with major gaps
+- 0-4: little to no match
 
 Respond ONLY with valid JSON in this exact format:
 {{
@@ -98,18 +118,30 @@ Respond ONLY with valid JSON in this exact format:
     }},
     "total_score": <0-100>,
     "recommendation": "<strong apply | apply | maybe apply | don't apply>",
-    "strengths": ["<specific strength1>", "<specific strength2>"],
-    "gaps": ["<specific gap1>", "<specific gap2>"],
-    "reasoning": "<2-3 sentences explaining the key factors>"
+    "strengths": [
+        "<2-4 concrete reasons the resume matches important role requirements>",
+        "<mention the specific skill, experience, domain, or scope evidence>"
+    ],
+    "gaps": [
+        "<2-4 concrete missing, weak, unclear, or mismatched areas>",
+        "<prioritize required skills and seniority/scope gaps over minor nice-to-haves>"
+    ],
+    "reasoning": "<2-3 sentences summarizing the main score drivers, tradeoffs, and why the recommendation follows from the evidence>"
 }}
 
 Recommendation thresholds:
-- 85-100 → "strong apply"
-- 65-84  → "apply"
-- 45-64  → "maybe apply"
-- 0-44   → "don't apply"
+- 85-100: "strong apply"
+- 65-84: "apply"
+- 45-64: "maybe apply"
+- 0-44: "don't apply"
 
-IMPORTANT: Use plain text only. No HTML tags, no markdown, no bold formatting.\
+Rules:
+- The recommendation must match the total_score threshold.
+- strengths must be specific, evidence-based, and tied to important role requirements.
+- gaps must be specific and should distinguish must-have gaps from preferred-skill gaps.
+- Do not use generic statements like "good experience" or "skills match" without naming the actual evidence.
+- Use plain text only. No HTML tags, no markdown, no bold formatting.
+- Return JSON only. Do not include explanatory text before or after the JSON.\
 """
 
 
