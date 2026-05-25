@@ -22,7 +22,7 @@ Greenhouse API (20+ companies)
         ▼
   Embedding Layer (OpenAI text-embedding-3-small)
   • Embeds resume once
-  • Embeds each job title and description
+  • Embeds each job title, company, and description
   • Ranks by cosine similarity
         │
         ▼
