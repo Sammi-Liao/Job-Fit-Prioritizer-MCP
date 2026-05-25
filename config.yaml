@@ -1,0 +1,47 @@
+candidate:
+  resume_path: ./resume.pdf
+  years_of_experience: 5     # your years of experience
+  min_required_years: 3      # skip jobs requiring less years of experience than this
+  max_required_years: 8      # skip jobs requiring more years of experience than this
+  job_titles:                # add/remove job titles that you want to track here
+    - "data scientist"
+  exclude_title_keywords:    # skip jobs with these words in the title
+    - "manager"
+    - "director"
+    - "intern"
+    - "mba"
+
+greenhouse:
+  posted_within_days: 21   # only fetch jobs updated in last posted_within_days days
+
+  # Add/remove companies that you want to track here 
+  # token is the slug in boards.greenhouse.io/{token}
+  companies:
+    - { token: anthropic,   name: "Anthropic" }
+    - { token: databricks,  name: "Databricks" }
+    - { token: scaleai,     name: "Scale AI" }
+    - { token: stripe,      name: "Stripe" }
+    - { token: airbnb,      name: "Airbnb" }
+    - { token: figma,       name: "Figma" }
+    - { token: notion,      name: "Notion" }
+    - { token: datadog,     name: "Datadog" }
+    - { token: cloudflare,  name: "Cloudflare" }
+    - { token: twilio,      name: "Twilio" }
+    - { token: lyft,        name: "Lyft" }
+    - { token: robinhood,   name: "Robinhood" }
+    - { token: reddit,      name: "Reddit" }
+    - { token: pinterest,   name: "Pinterest" }
+    - { token: duolingo,    name: "Duolingo" }
+    - { token: brex,        name: "Brex" }
+    - { token: amplitude,   name: "Amplitude" }
+    - { token: mongodb,     name: "MongoDB" }
+    - { token: airtable,    name: "Airtable" }
+    - { token: asana,       name: "Asana" }
+    - { token: dropbox,     name: "Dropbox" }
+
+pipeline:
+  llm_judge_top_n: 10
+
+openai:
+  embedding_model: text-embedding-3-small
+  judge_model: gpt-4o-mini

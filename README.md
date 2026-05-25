@@ -1,0 +1,166 @@
+# Job Application Prioritizer — MCP Server
+
+An MCP (Model Context Protocol) server that automates job application prioritization by matching your resume against job listings using a two-stage ranking pipeline: semantic embeddings for broad ranking, followed by an LLM-as-Judge for deep evaluation.
+
+Built with [FastMCP](https://github.com/jlowin/fastmcp) and Docker. Integrates directly with Claude Desktop.
+
+---
+
+## How It Works
+
+```
+Greenhouse API (20+ companies)
+        │
+        ▼
+  Hard Filters (fetch stage)
+  • Title keyword match
+  • Experience years range (regex)
+  • Updated within N days
+        │
+        ▼
+  Embedding Layer (OpenAI text-embedding-3-small)
+  • Embeds resume once
+  • Embeds each job description
+  • Ranks by cosine similarity
+        │
+        ▼
+  LLM-as-Judge (GPT-4o-mini) — top N only
+  • Scores 4 dimensions (0–25 each):
+      Role Type Match / Technical Skills / Experience Level / Domain Fit
+  • Total score out of 100
+  • Recommendation: Strong Apply / Apply / Maybe Apply / Don't Apply
+        │
+        ▼
+  Results in Claude Desktop
+```
+
+---
+
+## Setup
+
+### 1. Prerequisites
+- Docker
+- Claude Desktop
+- OpenAI API key
+
+### 2. Clone & configure
+
+```bash
+git clone <your-repo-url>
+cd job-mcp
+cp .env.example .env
+```
+
+Edit `.env`:
+```
+OPENAI_API_KEY=sk-...
+```
+
+### 3. Add your resume
+
+Place your resume at:
+```
+job-mcp/resume.pdf
+```
+
+### 4. Configure search preferences
+
+Edit `config.yaml`:
+```yaml
+candidate:
+  resume_path: ./resume.pdf
+  years_of_experience: 5
+  min_required_years: 3      # skip jobs requiring less than this
+  max_required_years: 8      # skip jobs requiring more than this
+  job_titles:
+    - "data scientist"
+    - "machine learning"
+
+greenhouse:
+  posted_within_days: 21
+  companies:
+    - { token: anthropic,  name: "Anthropic" }
+    - { token: databricks, name: "Databricks" }
+    # ... add more
+```
+
+### 5. Build Docker image
+
+```bash
+docker build -t job-mcp .
+```
+
+### 6. Connect to Claude Desktop
+
+Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "job-mcp": {
+      "command": "docker",
+      "args": [
+        "run", "--rm", "-i",
+        "-v", "/absolute/path/to/job-mcp/data:/app/data",
+        "-v", "/absolute/path/to/job-mcp/config.yaml:/app/config.yaml",
+        "-v", "/absolute/path/to/job-mcp/resume.pdf:/app/resume.pdf",
+        "--env-file", "/absolute/path/to/job-mcp/.env",
+        "job-mcp"
+      ]
+    }
+  }
+}
+```
+
+Restart Claude Desktop.
+
+---
+
+## Usage
+
+Talk to Claude naturally — it will call the right tools automatically.
+
+| What you say | What happens |
+|---|---|
+| "Find me data scientist jobs" | `run_pipeline()` — fetch → rank → judge top 10 |
+| "Show me the results" | `get_all_evaluations()` |
+| "Judge 5 more" | `evaluate_jobs(top_n=5)` |
+| "Done with this batch" | `dismiss_batch()` |
+| "How many jobs are in the DB?" | `get_stats()` |
+| "Clear everything and start over" | `reset_database()` |
+
+---
+
+## Available Tools
+
+| Tool | Description |
+|---|---|
+| `load_resume` | Embed resume from `config.yaml` path |
+| `fetch_jobs` | Pull jobs from Greenhouse API |
+| `embed_and_rank` | Compute cosine similarity for pending jobs |
+| `evaluate_jobs(top_n)` | LLM judge top N ranked jobs |
+| `run_pipeline(top_n)` | Run all three steps at once |
+| `get_all_evaluations` | View results grouped by recommendation |
+| `get_recommendations` | View only "apply" recommendations |
+| `dismiss_batch` | Mark current batch as done, move to next |
+| `reset_database` | Clear all jobs (resume kept) |
+| `get_stats` | Job counts by status |
+
+---
+
+## Supported Companies (Greenhouse)
+
+20 verified board tokens including: Anthropic, Databricks, Scale AI, Stripe, Airbnb, Figma, Datadog, Cloudflare, Twilio, Lyft, Robinhood, Reddit, Pinterest, Duolingo, Brex, Amplitude, MongoDB, Airtable, Asana, Dropbox.
+
+To add a company: find their board token at `boards.greenhouse.io/{token}` and add it to `config.yaml`.
+
+---
+
+## Tech Stack
+
+- **FastMCP** — MCP server framework
+- **OpenAI** — embeddings (`text-embedding-3-small`) + LLM judge (`gpt-4o-mini`)
+- **Greenhouse Job Board API** — free, no API key required
+- **SQLite** — local job database
+- **Pydantic** — LLM response validation
+- **Docker** — containerized deployment

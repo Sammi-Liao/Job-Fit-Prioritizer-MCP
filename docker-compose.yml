@@ -1,0 +1,11 @@
+services:
+  job-mcp:
+    build: .
+    volumes:
+      - ./data:/app/data          # persist SQLite DB
+      - ./config.yaml:/app/config.yaml
+      - ./resume.pdf:/app/resume.pdf
+    env_file:
+      - .env
+    stdin_open: true
+    tty: true

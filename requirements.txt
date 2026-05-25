@@ -1,0 +1,8 @@
+fastmcp
+openai
+httpx
+numpy
+pypdf
+pyyaml
+python-dotenv
+tqdm
