@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 
 CONFIG_PATH = Path(__file__).parent.parent / "config.yaml"
 GREENHOUSE_BASE = "https://boards-api.greenhouse.io/v1/boards"
+US_LOCATION_KEYWORDS = ["united states", "usa", "u.s.", "us"]
 
 
 def load_config() -> dict:
@@ -34,6 +35,29 @@ def _title_excluded(title: str, exclude_keywords: list[str]) -> bool:
     return any(kw.lower() in title_lower for kw in exclude_keywords)
 
 
+def _keyword_in_text(text: str, keyword: str) -> bool:
+    pattern = rf"(?<![a-z0-9]){re.escape(keyword.lower())}(?![a-z0-9])"
+    return re.search(pattern, text) is not None
+
+
+def _is_allowed_location(location: str, location_filter: dict) -> bool:
+    if not location_filter.get("us_only", False):
+        return True
+
+    loc = location.strip().lower()
+    is_us = any(_keyword_in_text(loc, keyword) for keyword in US_LOCATION_KEYWORDS)
+    is_plain_remote = location_filter.get("allow_plain_remote", False) and loc == "remote"
+
+    if not (is_us or is_plain_remote):
+        return False
+
+    cities = location_filter.get("cities", [])
+    if cities and not is_plain_remote:
+        return any(_keyword_in_text(loc, city) for city in cities)
+
+    return True
+
+
 def _extract_min_years(description: str) -> int | None:
     """Extract the years of experience required from a job description."""
     patterns = [
@@ -52,7 +76,7 @@ def _extract_min_years(description: str) -> int | None:
 async def _fetch_company_jobs(
     token: str, company_name: str, keywords: list[str],
     exclude_keywords: list[str], max_years: int, min_years_floor: int,
-    cutoff: datetime | None,
+    cutoff: datetime | None, location_filter: dict,
 ) -> list[dict]:
     url = f"{GREENHOUSE_BASE}/{token}/jobs"
 
@@ -69,6 +93,10 @@ async def _fetch_company_jobs(
         if not _title_matches(title, keywords):
             continue
         if _title_excluded(title, exclude_keywords):
+            continue
+
+        location = item.get("location", {}).get("name", "")
+        if not _is_allowed_location(location, location_filter):
             continue
 
         updated_at = item.get("updated_at")
@@ -89,7 +117,7 @@ async def _fetch_company_jobs(
                 "id": f"gh_{token}_{item['id']}",
                 "title": title,
                 "company": company_name,
-                "location": item.get("location", {}).get("name", ""),
+                "location": location,
                 "description": description,
                 "url": item.get("absolute_url", ""),
                 "salary_min": None,
@@ -107,6 +135,7 @@ async def fetch_all_jobs() -> int:
     exclude_keywords = config["candidate"].get("exclude_title_keywords", [])
     max_years = config["candidate"].get("max_required_years", 99)
     min_years_floor = config["candidate"].get("min_required_years", 0)
+    location_filter = config["candidate"].get("location_filter", {})
     companies = config["greenhouse"]["companies"]
 
     posted_within_days = config["greenhouse"].get("posted_within_days")
@@ -116,7 +145,10 @@ async def fetch_all_jobs() -> int:
     for entry in companies:
         token = entry["token"]
         name = entry["name"]
-        jobs = await _fetch_company_jobs(token, name, keywords, exclude_keywords, max_years, min_years_floor, cutoff)
+        jobs = await _fetch_company_jobs(
+            token, name, keywords, exclude_keywords, max_years,
+            min_years_floor, cutoff, location_filter
+        )
         company_new = 0
         for job in jobs:
             if not db.job_exists(job["id"]):

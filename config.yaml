@@ -10,6 +10,11 @@ candidate:
     - "director"
     - "intern"
     - "mba"
+  location_filter:
+    us_only: true             # keep US jobs; plain "Remote" is allowed below
+    allow_plain_remote: true  # allow "Remote" when no non-US country/region is specified
+    cities: []                # optional: restrict non-remote jobs to these cities
+    # example: cities: ["New York", "San Francisco"]
 
 greenhouse:
   posted_within_days: 21   # only fetch jobs updated in last posted_within_days days

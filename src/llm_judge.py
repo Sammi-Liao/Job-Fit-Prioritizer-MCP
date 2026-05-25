@@ -120,7 +120,7 @@ Respond ONLY with valid JSON in this exact format:
     "recommendation": "<strong apply | apply | maybe apply | don't apply>",
     "strengths": [
         "<2-4 concrete reasons the resume matches important role requirements>",
-        "<mention the specific skill, experience, domain, or scope evidence>"
+        "<focus on specific skills, tools, deliverables, domain knowledge, or role requirements rather than generic work history>"
     ],
     "gaps": [
         "<2-4 concrete missing, weak, unclear, or mismatched areas>",
@@ -138,6 +138,7 @@ Recommendation thresholds:
 Rules:
 - The recommendation must match the total_score threshold.
 - strengths must be specific, evidence-based, and tied to important role requirements.
+- Do not list generic work experience, years of experience, or past job titles as strengths unless they directly prove a required skill, domain fit, or seniority/scope requirement.
 - gaps must be specific and should distinguish must-have gaps from preferred-skill gaps.
 - Do not use generic statements like "good experience" or "skills match" without naming the actual evidence.
 - Use plain text only. No HTML tags, no markdown, no bold formatting.
