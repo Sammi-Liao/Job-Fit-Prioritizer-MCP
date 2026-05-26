@@ -124,7 +124,7 @@ Respond ONLY with valid JSON in this exact format:
     ],
     "gaps": [
         "<2-4 concrete missing, weak, unclear, or mismatched areas>",
-        "<prioritize required skills and seniority/scope gaps over minor nice-to-haves>"
+        "<prioritize missing required skills over minor nice-to-haves; do not mention seniority or experience level>"
     ],
     "reasoning": "<2-3 sentences summarizing the main score drivers, tradeoffs, and why the recommendation follows from the evidence>"
 }}
